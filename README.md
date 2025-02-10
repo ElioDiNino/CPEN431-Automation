@@ -1,6 +1,6 @@
 # CPEN 431 Automation & Deployment
 
-AWS infrastructure via Terraform for CPEN 431 assignments 7-11 and a script to automate local and remote server/client deployment.
+AWS infrastructure via Terraform for [CPEN 431 assignments 7-11](https://docs.google.com/document/d/1fKHnDaYBcHvg2rOGqvnGesi-3LHhOEMIcYn8B9QmROU/edit?usp=sharing) and a script to automate local and remote server/client deployment.
 
 **Author:** [Elio Di Nino](https://github.com/ElioDiNino)
 
@@ -54,7 +54,7 @@ If you find any bugs or issues, please open a GitHub issue. I will work to addre
 ## Prerequisites
 
 > [!WARNING]
-> If you are using Windows and plan to use the automation script after infrastructure creation with Terraform, you must use Windows Subsystem for Linux (WSL) for everything. If you only want to use the Terraform, you can use the Windows version of the Terraform CLI.
+> If you are using Windows and plan to use the automation script after infrastructure creation with Terraform, you must use [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/) for everything. If you only want to use the Terraform, you can use the Windows version of the Terraform CLI.
 
 ### Terraform
 
@@ -85,7 +85,7 @@ Make sure you are running the script on a Unix-like system (e.g. Linux, macOS, W
 - [`jq`](https://jqlang.org/)
 
 > [!NOTE]
-> If you are using the automation script to interact with AWS EC2 instances, your infrastructure must have been created with the Terraform in this repository first as it creates specific file paths and uses the generated key pair.
+> If you are using the automation script to interact with AWS EC2 instances, your infrastructure must have been created with the Terraform in this repository first as the script relies on its outputs. This does not apply if you are only using the script for local deployment.
 
 ## Usage
 
