@@ -7,6 +7,9 @@ set -eo pipefail
 remote_dir="upload"
 logs_dir="logs"
 pem_file="ec2.pem"
+client_list_file="client.list"
+server_list_file="server.list"
+single_server_list_file="single-server.list"
 ssh_user="ubuntu"
 # We don't want host key confirmation and to clutter the known hosts file with temporary EC2 instances
 ssh_options="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
@@ -62,7 +65,7 @@ check_ec2() {
   # Check if the DMI decode command is available
   if [ -x "$(command -v dmidecode)" ]; then
     # Check if the DMI data is available
-    if sudo dmidecode -s system-uuid &> /dev/null; then
+    if sudo dmidecode -s system-uuid &>/dev/null; then
       # Check if the DMI data contains EC2 string
       if sudo dmidecode -s system-uuid | grep -q '^[Ee][Cc]2'; then
         is_ec2=yes
@@ -76,7 +79,7 @@ check_ec2() {
   # Simple check will work for many older instance types
   elif [ -f /sys/hypervisor/uuid ]; then
     # File should be readable by non-root users.
-    if [ `head -c 3 /sys/hypervisor/uuid` == "ec2" ]; then
+    if [ $(head -c 3 /sys/hypervisor/uuid) == "ec2" ]; then
       is_ec2=yes
     else
       is_ec2=no
@@ -85,7 +88,7 @@ check_ec2() {
   # This check will work on newer m5/c5 instances, but only if you have root
   elif [ -r /sys/devices/virtual/dmi/id/product_uuid ]; then
     # If the file exists AND is readable by us, we can rely on it.
-    if [ `head -c 3 /sys/devices/virtual/dmi/id/product_uuid` == "EC2" ]; then
+    if [ $(head -c 3 /sys/devices/virtual/dmi/id/product_uuid) == "EC2" ]; then
       is_ec2=yes
     else
       is_ec2=no
@@ -93,7 +96,7 @@ check_ec2() {
 
   else
     # Fallback check of http://169.254.169.254/
-    if $(curl -s -m 5 http://169.254.169.254/latest/dynamic/instance-identity/document | grep -q availabilityZone) ; then
+    if $(curl -s -m 5 http://169.254.169.254/latest/dynamic/instance-identity/document | grep -q availabilityZone); then
       is_ec2=yes
     else
       is_ec2=no
@@ -279,7 +282,7 @@ EOM
   target=$2
 
   # Make sure the server command has been run first so that the .list files are available
-  if [ ! -f "$remote_dir/server.list" ]; then
+  if [ ! -f "$remote_dir/$server_list_file" ]; then
     echo "Error: The server command must be run first"
     exit 1
   fi
@@ -290,7 +293,7 @@ EOM
       exit 1
     fi
     echo "Running the client..."
-    cd $logs_dir && java -jar ../$3 --servers-list ../$remote_dir/client.list $4
+    cd $logs_dir && java -jar ../$3 --servers-list ../$remote_dir/$client_list_file $4
     echo "Client run completed, please view the generated logs"
   else
     if [[ "$#" -ne 4 && "$#" -ne 6 ]]; then
@@ -302,19 +305,19 @@ EOM
     server_java=""
     if [[ "$#" -eq 6 ]]; then
       server_echo="echo \"Starting server\""
-      server_java="java -Xmx64m -jar $5 --servers-list $remote_dir/server.list $6 > $logs_dir/server.log 2>&1 &"
+      server_java="java -Xmx64m -jar $5 --servers-list $remote_dir/$server_list_file $6 > $logs_dir/server.log 2>&1 &"
     fi
 
     details=$(get_terraform_output)
     public_dns=$(echo "${details}" | jq -r '.[1].public_dns')
     ssh -i $pem_file $ssh_options $ssh_user@$public_dns \
-<<ENDSSH
+      <<ENDSSH
 cd /tmp
 mkdir -p $logs_dir
 $server_echo
 $server_java
 echo "Running the client..."
-cd $logs_dir && java -jar ../$3 --servers-list ../$remote_dir/client.list $4
+cd $logs_dir && java -jar ../$3 --servers-list ../$remote_dir/$client_list_file $4
 ENDSSH
     echo "Client run completed, fetching the logs..."
     cmd_fetch_logs
@@ -345,33 +348,36 @@ fi
 cd "$(dirname "$0")"
 
 case $command in
-  setup)
-    cmd_setup_remote
-    ;;
-  netem-enable)
-    cmd_netem_enable
-    ;;
-  netem-disable)
-    cmd_netem_disable
-    ;;
-  upload)
-    cmd_upload_files
-    ;;
-  server)
-    cmd_run_server "$@"
-    ;;
-  client)
-    cmd_run_client "$@"
-    ;;
-  fetch-logs)
-    cmd_fetch_logs
-    ;;
-  help|--help)
-    command_info
-    ;;
-  *)
-    echo "Invalid command"
-    command_info
-    exit 1
-    ;;
+setup)
+  cmd_setup_remote
+  ;;
+netem-enable)
+  cmd_netem_enable
+  ;;
+netem-disable)
+  cmd_netem_disable
+  ;;
+upload)
+  cmd_upload_files
+  ;;
+server)
+  cmd_run_server "$@"
+  ;;
+kill-server)
+  cmd_kill_server "$@"
+  ;;
+client)
+  cmd_run_client "$@"
+  ;;
+fetch-logs)
+  cmd_fetch_logs
+  ;;
+help | --help)
+  command_info
+  ;;
+*)
+  echo "Invalid command"
+  command_info
+  exit 1
+  ;;
 esac
