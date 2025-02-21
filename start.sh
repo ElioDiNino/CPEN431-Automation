@@ -20,6 +20,7 @@ terraform_output=""
 jar_hint="JAR path arguments should be relative to the current directory (e.g. $remote_dir/server.jar)"
 quoted_hint="Arguments wrapped in double quotes need to be quoted to allow for multiple arguments to be passed (e.g. \"--arg1 value1 --arg2 value2\"). If you have nothing to pass, use \"\"."
 option_hint="Arguments wrapped in square brackets (i.e. [<arg>]) are optional"
+java_args_hint="Java arguments are separate from JAR arguments. Note that the -Xmx64m flag is already included for server launches"
 
 ############################################
 # Helper functions
@@ -51,6 +52,7 @@ command_info() {
   echo "  - $jar_hint"
   echo "  - $quoted_hint"
   echo "  - $option_hint"
+  echo "  - $java_args_hint"
 }
 
 # Check if the script is running inside an EC2 instance
@@ -171,12 +173,13 @@ generate_server_lists() {
 # Run the server script
 run_server_script() {
   target=$1
-  jar_file=$2 # Passing "" will kill running servers and not start new ones
-  jar_args=$3
+  java_args=$2
+  jar_file=$3 # Passing "" will kill running servers and not start new ones
+  jar_args=$4
 
   if [ "$target" == "local" ]; then
     chmod +x server.sh
-    ./server.sh "$jar_file" "$jar_args" $remote_dir/$server_list_file $logs_dir
+    ./server.sh "$java_args" "$jar_file" "$jar_args" $remote_dir/$server_list_file $logs_dir
   else
     details=$(get_terraform_output)
     public_dns=$(echo "${details}" | jq -r '.[0].public_dns')
@@ -185,7 +188,7 @@ run_server_script() {
 cd /tmp
 mkdir -p "$logs_dir"
 chmod +x /tmp/server.sh
-/tmp/server.sh "$jar_file" "$jar_args" $remote_dir/$server_list_file $logs_dir
+/tmp/server.sh "$java_args" "$jar_file" "$jar_args" $remote_dir/$server_list_file $logs_dir
 ENDSSH
   fi
 }
@@ -199,7 +202,7 @@ cmd_setup_remote() {
   expect_ec2 yes
   mkdir -p $remote_dir $logs_dir
   sudo apt-get update
-  sudo apt-get install openjdk-21-jdk-headless iproute2 jq -y
+  sudo apt-get install openjdk-21-jdk-headless iproute2 net-tools jq -y
 }
 
 # Enable network emulation
@@ -230,20 +233,22 @@ cmd_upload_files() {
 cmd_run_server() {
   re='^(remote|local)$'
   re2='^[0-9]+$'
-  if [[ "$#" -ne 5 || ! "$2" =~ $re || ! "$3" =~ $re2 ]]; then
-    echo "Usage: $0 server <local/remote> <number of servers> <jar path> \"<jar args>\""
+  if [[ "$#" -ne 6 || ! "$2" =~ $re || ! "$3" =~ $re2 ]]; then
+    echo "Usage: $0 server <local/remote> <number of servers> \"<java args>\" <jar path> \"<jar args>\""
     echo "Notes:"
     echo "  - $jar_hint"
     echo "  - $quoted_hint"
+    echo "  - $java_args_hint"
     exit 1
   fi
   target=$2
   num_servers=$3
-  jar_file=$4
-  jar_args=$5
+  java_args=$4
+  jar_file=$5
+  jar_args=$6
   generate_server_lists $num_servers $target
 
-  run_server_script $target $jar_file "$jar_args"
+  run_server_script $target "$java_args" $jar_file "$jar_args"
 }
 
 cmd_kill_server() {
@@ -258,7 +263,7 @@ cmd_kill_server() {
     exit 1
   fi
 
-  run_server_script $2 "" ""
+  run_server_script $2 "" "" ""
 }
 
 # Run the client
@@ -266,12 +271,13 @@ cmd_run_client() {
   re='^(remote|local)$'
   text=$(
     cat <<EOM
-Usage: $0 client <local/remote> <client jar path> "<jar args>" [<server jar path> "<jar args>"]
+Usage: $0 client <local/remote> "<java args>" <client jar path> "<jar args>" ["<java args>" <server jar path> "<jar args>"]
 Notes:
   - Make sure the server command has been run first
   - The optional server details are only permitted on remote runs
   - $jar_hint
   - $quoted_hint
+  - $java_args_hint
 EOM
   )
 
@@ -287,25 +293,29 @@ EOM
     exit 1
   fi
 
+  java_args=$3
+  jar_file=$4
+  jar_args=$5
+
   if [[ $target == "local" ]]; then
-    if [[ "$#" -ne 4 ]]; then
+    if [[ "$#" -ne 5 ]]; then
       echo -e "$text"
       exit 1
     fi
     echo "Running the client..."
-    cd $logs_dir && java -jar ../$3 --servers-list ../$remote_dir/$client_list_file $4
+    cd $logs_dir && java $java_args -jar ../$jar_file --servers-list ../$remote_dir/$client_list_file $jar_args
     echo "Client run completed, please view the generated logs"
   else
-    if [[ "$#" -ne 4 && "$#" -ne 6 ]]; then
+    if [[ "$#" -ne 5 && "$#" -ne 8 ]]; then
       echo -e "$text"
       exit 1
     fi
 
     server_echo="echo \"Skipping starting single server\""
     server_java=""
-    if [[ "$#" -eq 6 ]]; then
+    if [[ "$#" -eq 8 ]]; then
       server_echo="echo \"Starting server\""
-      server_java="java -Xmx64m -jar $5 --servers-list $remote_dir/$server_list_file $6 > $logs_dir/server.log 2>&1 &"
+      server_java="java -Xmx64m $6 -jar $7 --servers-list $remote_dir/$single_server_list_file --index 0 $8 >$logs_dir/server.log 2>&1 &"
     fi
 
     details=$(get_terraform_output)
@@ -317,7 +327,7 @@ mkdir -p $logs_dir
 $server_echo
 $server_java
 echo "Running the client..."
-cd $logs_dir && java -jar ../$3 --servers-list ../$remote_dir/$client_list_file $4
+cd $logs_dir && java $java_args -jar ../$jar_file --servers-list ../$remote_dir/$client_list_file $jar_args
 ENDSSH
     echo "Client run completed, fetching the logs..."
     cmd_fetch_logs
