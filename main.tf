@@ -67,19 +67,19 @@ resource "aws_vpc_security_group_ingress_rule" "allow_internal_traffic" {
 resource "aws_vpc_security_group_ingress_rule" "allow_all_udp" {
   # This is unfortunately required by the client and submission server
   security_group_id = aws_security_group.this.id
-  cidr_ipv4 = "0.0.0.0/0"
-  ip_protocol = "udp"
-  from_port = 0
-  to_port = 65535
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "udp"
+  from_port         = 0
+  to_port           = 65535
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow_all_tcp" {
   # This is unfortunately required by the client and submission server
   security_group_id = aws_security_group.this.id
-  cidr_ipv4 = "0.0.0.0/0"
-  ip_protocol = "tcp"
-  from_port = 0
-  to_port = 65535
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "tcp"
+  from_port         = 0
+  to_port           = 65535
 }
 
 module "aws_key_pair_deployment" {
