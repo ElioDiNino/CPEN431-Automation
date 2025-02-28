@@ -23,7 +23,7 @@ for server in $(cat $list_file); do
   # Only start the server if a jar file is specified
   if [ -n "$jar_file" ]; then
     echo "Starting server $i on port $port"
-    java -Xmx64m $java_args -jar $jar_file --servers-list $list_file --index $(($i - 1)) $jar_args >$logs_dir/server-$i.log 2>&1 &
+    java $java_args -jar $jar_file --servers-list $list_file --index $(($i - 1)) $jar_args >$logs_dir/server-$i.log 2>&1 &
   fi
   i=$((i + 1))
 done

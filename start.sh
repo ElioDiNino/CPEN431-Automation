@@ -20,7 +20,7 @@ terraform_output=""
 jar_hint="JAR path arguments should be relative to the current directory (e.g. $remote_dir/server.jar)"
 quoted_hint="Arguments wrapped in double quotes need to be quoted to allow for multiple arguments to be passed (e.g. \"--arg1 value1 --arg2 value2\"). If you have nothing to pass, use \"\"."
 option_hint="Arguments wrapped in square brackets (i.e. [<arg>]) are optional"
-java_args_hint="Java arguments are separate from JAR arguments. Note that the -Xmx64m flag is already included for server launches"
+java_args_hint="Java arguments are separate from JAR arguments (e.g. the -Xmx64m flag)"
 
 ############################################
 # Helper functions
@@ -324,7 +324,7 @@ EOM
     server_java=""
     if [[ "$#" -eq 8 ]]; then
       server_echo="echo \"Starting server\""
-      server_java="java -Xmx64m $6 -jar $7 --servers-list $remote_dir/$single_server_list_file --index 0 $8 >$logs_dir/server.log 2>&1 &"
+      server_java="java $6 -jar $7 --servers-list $remote_dir/$single_server_list_file --index 0 $8 >$logs_dir/server.log 2>&1 &"
     fi
 
     details=$(get_terraform_output)
