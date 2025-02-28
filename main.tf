@@ -138,13 +138,12 @@ resource "aws_ec2_fleet" "this" {
     }
   }
 
-  # Blocked by https://github.com/hashicorp/terraform-provider-aws/issues/41237
-  # spot_options {
-  #   max_total_price          = local.instance_count * var.max_hourly_instance_price
-  #   min_target_capacity      = local.instance_count
-  #   single_instance_type     = true
-  #   single_availability_zone = true
-  # }
+  spot_options {
+    max_total_price          = local.instance_count * var.max_hourly_instance_price
+    min_target_capacity      = local.instance_count
+    single_instance_type     = true
+    single_availability_zone = true
+  }
 
   target_capacity_specification {
     default_target_capacity_type = "spot"
