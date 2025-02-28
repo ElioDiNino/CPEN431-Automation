@@ -208,9 +208,9 @@ resource "null_resource" "configure_instances" {
   provisioner "remote-exec" {
     # Enable network emulation on only the first instance
     inline = count.index == 0 ? [
-      "/tmp/start.sh netem-enable",
-      "echo 'Network emulation enabled'",
-    ] : [
+      "/tmp/start.sh netem-enable ${var.netem_packet_loss_percentage}",
+      "echo 'Network emulation enabled with ${var.netem_packet_loss_percentage}% packet loss'",
+      ] : [
       # An empty command is not allowed in Terraform, so we echo a message
       "echo 'Network emulation not enabled'",
     ]

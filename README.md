@@ -1,6 +1,6 @@
 # CPEN 431 Automation & Deployment
 
-AWS infrastructure via Terraform for [CPEN 431 assignments 7-11](https://docs.google.com/document/d/1fKHnDaYBcHvg2rOGqvnGesi-3LHhOEMIcYn8B9QmROU/edit?usp=sharing) and a script to automate local and remote server/client deployment.
+AWS infrastructure via Terraform for [CPEN 431 assignments 7-12](https://docs.google.com/document/d/1fKHnDaYBcHvg2rOGqvnGesi-3LHhOEMIcYn8B9QmROU/edit?usp=sharing) and a script to automate local and remote server/client deployment.
 
 **Author:** [Elio Di Nino](https://github.com/ElioDiNino)
 
@@ -38,6 +38,7 @@ If you find any bugs or issues, please open a GitHub issue. I will work to addre
 - Configures the instances once booted
     - The instructor's public key is added to the `authorized_keys` file
     - Required dependencies are installed (e.g. Java 21)
+    - Network emulation is enabled on the server instance with a <ins>configurable packet loss percentage</ins>
     - Everything in [`upload/`](upload) is uploaded to the instances
         - You should put your JAR files in this directory
 - Tags are added to all resources for easy identification

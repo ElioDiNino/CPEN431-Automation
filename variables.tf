@@ -21,3 +21,9 @@ variable "max_hourly_instance_price" {
   default     = 0.10
   description = "The maximum hourly price to pay per spot instance"
 }
+
+variable "netem_packet_loss_percentage" {
+  type        = number
+  default     = 2.5
+  description = "The percentage of packets to drop"
+}
