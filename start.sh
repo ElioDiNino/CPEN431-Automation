@@ -208,9 +208,18 @@ cmd_setup_remote() {
 # Enable network emulation
 cmd_netem_enable() {
   expect_ec2 yes
+
+  re='^[0-9]*\.?[0-9]*$'
+  if [[ "$#" -ne 2 || ! "$2" =~ $re ]]; then
+    echo "Usage: $0 netem-enable <loss percentage>"
+    exit 1
+  fi
+
+  loss_percentage=$2
+
   interfaces=$(ip -json a | jq -r '.[].ifname')
   for iface in $interfaces; do
-    sudo tc qdisc replace dev $iface root netem delay 5msec loss 2.5%
+    sudo tc qdisc replace dev $iface root netem delay 5msec loss $loss_percentage%
   done
 }
 
@@ -362,7 +371,7 @@ setup)
   cmd_setup_remote
   ;;
 netem-enable)
-  cmd_netem_enable
+  cmd_netem_enable "$@"
   ;;
 netem-disable)
   cmd_netem_disable
