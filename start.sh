@@ -12,7 +12,7 @@ server_list_file="server.list"
 single_server_list_file="single-server.list"
 ssh_user="ubuntu"
 # We don't want host key confirmation and to clutter the known hosts file with temporary EC2 instances
-ssh_options="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+ssh_options="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60"
 base_port=12000
 is_ec2=""
 terraform_output=""
