@@ -2,7 +2,7 @@ locals {
   instance_count = 2
   tags = {
     Project    = "CPEN 431"
-    Assignment = "A7-11"
+    Assignment = "A7-12"
   }
 }
 
