@@ -14,6 +14,7 @@ ssh_user="ubuntu"
 # We don't want host key confirmation and to clutter the known hosts file with temporary EC2 instances
 ssh_options="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60"
 base_port=12000
+local_server_port=43100
 is_ec2=""
 terraform_output=""
 
@@ -163,7 +164,7 @@ generate_server_lists() {
     echo "${private_ip}:$((base_port + i))" >>$remote_dir/$server_list_file
   done
 
-  echo "127.0.0.1:43100" >$remote_dir/$single_server_list_file
+  echo "127.0.0.1:$local_server_port" >$remote_dir/$single_server_list_file
 
   if [ "$target" == "remote" ]; then
     upload_files "$remote_dir/$server_list_file $remote_dir/$single_server_list_file $remote_dir/$client_list_file" "$remote_dir/"
@@ -323,7 +324,7 @@ EOM
     server_echo="echo \"Skipping starting single server\""
     server_java=""
     if [[ "$#" -eq 8 ]]; then
-      server_echo="echo \"Starting server\""
+      server_echo="echo \"Starting single server\""
       server_java="java $6 -jar $7 --servers-list $remote_dir/$single_server_list_file --index 0 $8 >$logs_dir/server.log 2>&1 &"
     fi
 
@@ -333,6 +334,7 @@ EOM
       <<ENDSSH
 cd /tmp
 mkdir -p $logs_dir
+lsof -t -i :$local_server_port | xargs -r kill -s 9
 $server_echo
 $server_java
 echo "Running the client..."
